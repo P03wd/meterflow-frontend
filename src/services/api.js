@@ -2,7 +2,7 @@ import axios from "axios";
 
 // 🔥 Base API
 const API = axios.create({
-  baseURL: "http://localhost:5000/api"
+  baseURL: "https://meterflow-backend-8aet.onrender.com/api"
 });
 
 // ✅ API KEY
