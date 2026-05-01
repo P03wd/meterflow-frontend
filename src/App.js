@@ -121,7 +121,7 @@ function App() {
 
   return (
     <div style={{ padding: 20 }}>
-      <h1>🚀 MeterFlow Dashboard</h1>
+      <h1>🚀 MeterFlow Dashboard v2</h1>
 
       <p><strong>API Key:</strong> {localStorage.getItem("apiKey")}</p>
 
