@@ -13,8 +13,7 @@ import {
   fetchBilling,
   fetchPokemon,
   createOrder,
-  verifyPayment,
-  // API_KEY
+  verifyPayment
 } from "./services/api";
 
 function App() {
@@ -26,7 +25,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🔥 LOAD DATA (FIXED)
+  // 🔥 NEW: CONTROL TRAFFIC
+  const [autoRun, setAutoRun] = useState(false);
+
+  // 🔥 LOAD DATA
   const loadData = async () => {
     try {
       setLoading(true);
@@ -34,31 +36,29 @@ function App() {
 
       const usageRes = await fetchUsage();
       const usageData = usageRes.data;
-
       setUsage(usageData);
 
       const billingRes = await fetchBilling();
       setBilling(billingRes.data);
 
-      // // 🔥 FIXED: safe chart mapping
-      // const data = (usageData.recentRequests || []).map((r) => ({
-      //   time: r.timestamp
-      //     ? new Date(r.timestamp).toLocaleTimeString()
-      //     : "N/A",
-      //   latency: r.latency || 0
-      // }));
+      // 📈 LIVE GRAPH
+      setChartData((prev) => {
+        const newPoints = (usageData.recentRequests || [])
+          .slice(-5)
+          .map((r) => ({
+            time: new Date(r.timestamp).toLocaleTimeString(),
+            latency: r.latency
+          }));
 
-      // setChartData(data);
-// 🔥 FIXED: latest data first (important)
-const data = (usageData.recentRequests || [])
-  .slice(0, 10)          // take latest 10
-  .reverse()             // reverse so chart flows left → right
-  .map((r) => ({
-    time: new Date(r.timestamp).toLocaleTimeString(),
-    latency: r.latency
-  }));
+        const merged = [...prev, ...newPoints];
 
-setChartData(data);
+        const unique = merged.filter(
+          (item, index, self) =>
+            index === self.findIndex((t) => t.time === item.time)
+        );
+
+        return unique.slice(-10);
+      });
 
     } catch (err) {
       setError(err.response?.data?.message || "Error loading data");
@@ -67,7 +67,7 @@ setChartData(data);
     }
   };
 
-  // 🔥 POKEMON
+  // 🔍 POKEMON (manual)
   const searchPokemon = async () => {
     try {
       setError("");
@@ -103,25 +103,35 @@ setChartData(data);
     }
   };
 
-  // 🔄 AUTO REFRESH (FIXED STABILITY)
+  // 🔄 CONTROLLED AUTO TRAFFIC
   useEffect(() => {
     loadData();
 
-    const interval = setInterval(() => {
-      loadData();
-    }, 5000);
+    let interval;
+
+    if (autoRun) {
+      interval = setInterval(() => {
+        loadData();
+        fetchPokemon("ditto"); // 🔥 generate traffic
+      }, 3000);
+    }
 
     return () => clearInterval(interval);
-  }, []);
+  }, [autoRun]);
 
   return (
     <div style={{ padding: 20 }}>
       <h1>🚀 MeterFlow Dashboard</h1>
 
-      {/* <p><strong>API Key:</strong> {API_KEY}</p> */}
-<p><strong>API Key:</strong> {localStorage.getItem("apiKey")}</p>
+      <p><strong>API Key:</strong> {localStorage.getItem("apiKey")}</p>
+
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && <p>Loading...</p>}
+
+      {/* 🔥 CONTROL BUTTON */}
+      <button onClick={() => setAutoRun(!autoRun)}>
+        {autoRun ? "🛑 Stop Traffic" : "▶️ Start Traffic"}
+      </button>
 
       {/* USAGE */}
       <div>
@@ -130,7 +140,7 @@ setChartData(data);
         <p>Avg Latency: {usage?.avgLatency || 0} ms</p>
       </div>
 
-      {/* CHART */}
+      {/* 📈 CHART */}
       <div>
         <h2>📈 Latency Chart</h2>
         <LineChart width={600} height={300} data={chartData}>
@@ -142,21 +152,24 @@ setChartData(data);
         </LineChart>
       </div>
 
-      {/* BILLING */}
+      {/* 💰 BILLING */}
       <div>
         <h2>💰 Billing</h2>
         <p>Total Requests: {billing?.totalRequests || 0}</p>
         <p>Total Cost: ₹{billing?.totalCost || 0}</p>
       </div>
 
-      {/* PAYMENT */}
+      {/* 💳 PAYMENT */}
       <button onClick={handlePayment}>💳 Pay ₹500</button>
 
-      {/* POKEMON */}
+      {/* 🔎 POKEMON */}
       <div>
         <h2>Pokemon</h2>
 
-        <input value={name} onChange={(e) => setName(e.target.value)} />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
         <button onClick={searchPokemon}>Search</button>
 
         {pokemon && (
