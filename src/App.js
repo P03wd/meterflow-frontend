@@ -14,7 +14,7 @@ import {
   fetchPokemon,
   createOrder,
   verifyPayment,
-  API_KEY
+  // API_KEY
 } from "./services/api";
 
 function App() {
@@ -40,15 +40,25 @@ function App() {
       const billingRes = await fetchBilling();
       setBilling(billingRes.data);
 
-      // 🔥 FIXED: safe chart mapping
-      const data = (usageData.recentRequests || []).map((r) => ({
-        time: r.timestamp
-          ? new Date(r.timestamp).toLocaleTimeString()
-          : "N/A",
-        latency: r.latency || 0
-      }));
+      // // 🔥 FIXED: safe chart mapping
+      // const data = (usageData.recentRequests || []).map((r) => ({
+      //   time: r.timestamp
+      //     ? new Date(r.timestamp).toLocaleTimeString()
+      //     : "N/A",
+      //   latency: r.latency || 0
+      // }));
 
-      setChartData(data);
+      // setChartData(data);
+// 🔥 FIXED: latest data first (important)
+const data = (usageData.recentRequests || [])
+  .slice(0, 10)          // take latest 10
+  .reverse()             // reverse so chart flows left → right
+  .map((r) => ({
+    time: new Date(r.timestamp).toLocaleTimeString(),
+    latency: r.latency
+  }));
+
+setChartData(data);
 
     } catch (err) {
       setError(err.response?.data?.message || "Error loading data");
@@ -108,8 +118,8 @@ function App() {
     <div style={{ padding: 20 }}>
       <h1>🚀 MeterFlow Dashboard</h1>
 
-      <p><strong>API Key:</strong> {API_KEY}</p>
-
+      {/* <p><strong>API Key:</strong> {API_KEY}</p> */}
+<p><strong>API Key:</strong> {localStorage.getItem("apiKey")}</p>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {loading && <p>Loading...</p>}
 
